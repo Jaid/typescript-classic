@@ -26,5 +26,5 @@
     "typescript": "^7.0.2"
   },
   "funding": "https://github.com/sponsors/Jaid",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }
