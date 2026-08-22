@@ -2,6 +2,8 @@ import {copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile} from 'node:f
 import {tmpdir} from 'node:os'
 import {join, relative} from 'node:path'
 
+import {restoreNodeGlobals} from './restoreNodeGlobals.ts'
+
 type RegistryVersion = {
   dist?: {
     tarball?: string
@@ -64,7 +66,8 @@ const compressJavaScript = async (directory: string, outputDirectory: string) =>
 
   for (const file of files) {
     const filePath = relative(directory, file)
-    await copyFile(join(outputDirectory, filePath), file)
+    const minifiedSource = await readFile(join(outputDirectory, filePath), 'utf8')
+    await writeFile(file, restoreNodeGlobals(minifiedSource))
   }
 
   console.log(`Compressed ${files.length} JavaScript files with Bun`)
