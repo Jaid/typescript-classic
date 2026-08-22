@@ -1,5 +1,6 @@
 {
   "name": "typescript-classic",
+  "description": "TypeScript’s latest JavaScript-based release",
   "version": "6.0.4",
   "type": "module",
   "exports": {
