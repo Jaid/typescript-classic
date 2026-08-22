@@ -16,6 +16,7 @@
     "url": "git+https://github.com/Jaid/typescript-classic.git"
   },
   "scripts": {
+    "build": "bun scripts/build.ts",
     "test": "bun test --max-concurrency 1 ./test"
   },
   "devDependencies": {
