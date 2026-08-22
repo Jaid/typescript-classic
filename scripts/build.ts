@@ -73,13 +73,13 @@ const compressJavaScript = async (directory: string, outputDirectory: string) =>
   console.log(`Compressed ${files.length} JavaScript files with Bun`)
 }
 
-const rewritePackageJson = async (directory: string, version: string) => {
+const rewritePackageJson = async (directory: string, version: string, description: string) => {
   const packageJsonPath = join(directory, 'package.json')
   const source = JSON.parse(await readFile(packageJsonPath, 'utf8')) as Record<string, unknown>
   const packageJson = {
     name: 'typescript-classic',
     version,
-    description: source.description,
+    description,
     keywords: source.keywords,
     license: source.license,
     repository: {
@@ -119,29 +119,34 @@ const minimizeJson = async (directory: string): Promise<number> => {
   return count
 }
 
+const rootPackageJson = JSON.parse(await readFile(join(import.meta.dir, '..', 'package.json'), 'utf8')) as {
+  version: string
+  description: string
+}
+
 const registryUrl = 'https://registry.npmjs.org/typescript'
 const response = await fetch(registryUrl)
 if (!response.ok) throw new Error(`Failed to fetch ${registryUrl}: ${response.status} ${response.statusText}`)
 
 const metadata = await response.json() as RegistryMetadata
 const versions = metadata.versions ?? {}
-const version = Object.keys(versions)
+const upstreamVersion = Object.keys(versions)
   .filter(version => /^6\.\d+\.\d+$/.test(version))
   .sort(compareVersions)
   .at(-1)
 
-if (!version) throw new Error('No stable TypeScript 6.x version found')
+if (!upstreamVersion) throw new Error('No stable TypeScript 6.x version found')
 
-const tarballUrl = versions[version]?.dist?.tarball
-if (!tarballUrl) throw new Error(`No tarball URL found for TypeScript ${version}`)
+const tarballUrl = versions[upstreamVersion]?.dist?.tarball
+if (!tarballUrl) throw new Error(`No tarball URL found for TypeScript ${upstreamVersion}`)
 
-console.log(`Downloading TypeScript ${version} from ${tarballUrl}`)
+console.log(`Downloading TypeScript ${upstreamVersion} from ${tarballUrl}`)
 
 const tarballResponse = await fetch(tarballUrl)
 if (!tarballResponse.ok) throw new Error(`Failed to download ${tarballUrl}: ${tarballResponse.status} ${tarballResponse.statusText}`)
 
 const tempDirectory = await mkdtemp(join(tmpdir(), 'typescript-classic-'))
-const tarballPath = join(tempDirectory, `typescript-${version}.tgz`)
+const tarballPath = join(tempDirectory, `typescript-${upstreamVersion}.tgz`)
 const minifiedDirectory = join(tempDirectory, 'minified')
 const distDirectory = join(import.meta.dir, '..', 'dist')
 
@@ -164,7 +169,7 @@ try {
   if (exitCode) throw new Error(`tar exited with code ${exitCode}`)
 
   await compressJavaScript(distDirectory, minifiedDirectory)
-  await rewritePackageJson(distDirectory, version)
+  await rewritePackageJson(distDirectory, rootPackageJson.version, rootPackageJson.description)
   await replaceReadme(distDirectory)
   const jsonFileCount = await minimizeJson(distDirectory)
   console.log(`Minimized ${jsonFileCount} JSON files`)
@@ -172,4 +177,4 @@ try {
   await rm(tempDirectory, {force: true, recursive: true})
 }
 
-console.log(`Unpacked TypeScript ${version} to ${distDirectory}`)
+console.log(`Unpacked TypeScript ${upstreamVersion} to ${distDirectory}`)
