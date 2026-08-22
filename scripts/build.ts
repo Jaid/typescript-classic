@@ -93,6 +93,10 @@ const rewritePackageJson = async (directory: string, version: string) => {
   await writeFile(packageJsonPath, JSON.stringify(packageJson))
 }
 
+const replaceReadme = async (directory: string) => {
+  await copyFile(join(import.meta.dir, '..', 'readme.md'), join(directory, 'README.md'))
+}
+
 const minimizeJson = async (directory: string): Promise<number> => {
   let count = 0
   const entries = await readdir(directory, {withFileTypes: true})
@@ -158,6 +162,7 @@ try {
 
   await compressJavaScript(distDirectory, minifiedDirectory)
   await rewritePackageJson(distDirectory, version)
+  await replaceReadme(distDirectory)
   const jsonFileCount = await minimizeJson(distDirectory)
   console.log(`Minimized ${jsonFileCount} JSON files`)
 } finally {
